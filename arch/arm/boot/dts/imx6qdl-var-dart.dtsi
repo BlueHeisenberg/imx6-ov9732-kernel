@@ -216,13 +216,18 @@
 		reg = <0x50>;
 	};
 
-	ov564x_mipi: ov564x_mipi@3c {
-		compatible = "ovti,ov564x_mipi";
-		reg = <0x3c>;
+	ov564x_mipi: ov9732_mipi@36 {
+		compatible = "ovti,ov9732_mipi";
+		reg = <0x36>;
 		clocks = <&clks 200>;
 		clock-names = "csi_mclk";
 		pwn-gpios = <&gpio3 13 1>;
 		rst-gpios = <&gpio4 10 0>;
+#if 1
+		DOVDD-supply = <&vgen4_reg>; /* 1.8v */
+		AVDD-supply = <&vgen3_reg>;  /* 2.8v/3.3v, rev C board is VGEN3 rev B board is VGEN5 */
+		DVDD-supply = <&vgen4_reg>;  /* 1.8v*/
+#endif
 		csi_id = <1>;
 		mclk = <24000000>;
 		mclk_source = <0>;
@@ -307,6 +312,20 @@
 			vref_reg: vrefddr {
 				regulator-boot-on;
 				regulator-always-on;
+			};
+
+			vgen3_reg: vgen3 {
+				regulator-min-microvolt = <2800000>;
+				regulator-max-microvolt = <3300000>;
+				regulator-always-on;
+				regulator-boot-on;
+			};
+
+			vgen4_reg: vgen4 {
+				regulator-min-microvolt = <1800000>;
+				regulator-max-microvolt = <1800000>;
+				regulator-always-on;
+				regulator-boot-on;
 			};
 
 			vgen6_reg: vgen6 {

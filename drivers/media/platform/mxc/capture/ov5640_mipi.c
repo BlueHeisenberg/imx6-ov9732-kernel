@@ -3533,6 +3533,8 @@ static int ov5640_probe(struct i2c_client *client,
 	int retval;
 	u8 chip_id_high, chip_id_low;
 
+	pr_info("START OV5640_mipi PROBE\n");
+
 	/* request power down pin */
 	pwn_gpio = of_get_named_gpio(dev->of_node, "pwn-gpios", 0);
 	if (!gpio_is_valid(pwn_gpio)) {
@@ -3668,6 +3670,7 @@ static __init int ov5640_init(void)
 {
 	u8 err;
 
+	pr_info("START OV5640_mipi INIT\n");
 	err = i2c_add_driver(&ov5640_i2c_driver);
 	if (err != 0)
 		pr_err("%s:driver registration failed, error=%d\n",
