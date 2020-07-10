@@ -1890,6 +1890,9 @@ static int ov9732_init_mode(enum ov9732_frame_rate frame_rate,
 		&& (mode != ov9732_mode_INIT)) {
 		pr_err("Wrong ov9732 mode detected!\n");
 		return -1;
+	} else {
+		pr_info("OV9732 mode: %d\n", mode);
+		pr_info("OV9732 framerate: %d\n", frame_rate);
 	}
 
 	mipi_csi2_info = mipi_csi2_get_info();
@@ -1907,6 +1910,8 @@ static int ov9732_init_mode(enum ov9732_frame_rate frame_rate,
 	if (!mipi_csi2_get_status(mipi_csi2_info)) {
 		pr_err("Can not enable mipi csi2 driver!\n");
 		return -1;
+	} else {
+		pr_info("Mipi csi2 driver enabled\n", mode);
 	}
 
 	mipi_csi2_set_lanes(mipi_csi2_info);
@@ -1915,12 +1920,14 @@ static int ov9732_init_mode(enum ov9732_frame_rate frame_rate,
 	if (mode == ov9732_mode_INIT)
 		mipi_csi2_reset(mipi_csi2_info);
 
-	if (ov9732_data.pix.pixelformat == V4L2_PIX_FMT_UYVY)
+	/*if (ov9732_data.pix.pixelformat == V4L2_PIX_FMT_UYVY)
 		mipi_csi2_set_datatype(mipi_csi2_info, MIPI_DT_YUV422);
 	else if (ov9732_data.pix.pixelformat == V4L2_PIX_FMT_RGB565)
 		mipi_csi2_set_datatype(mipi_csi2_info, MIPI_DT_RGB565);
 	else
-		pr_err("currently this sensor format can not be supported!\n");
+		pr_err("currently this sensor format can not be supported!\n");*/
+
+	mipi_csi2_set_datatype(mipi_csi2_info, V4L2_PIX_FMT_GREY);
 
 	dn_mode = ov9732_mode_info_data[frame_rate][mode].dn_mode;
 	orig_dn_mode = ov9732_mode_info_data[frame_rate][orig_mode].dn_mode;
@@ -1928,33 +1935,33 @@ static int ov9732_init_mode(enum ov9732_frame_rate frame_rate,
 		pModeSetting = ov9732_init_setting_30fps_720p;
 		ArySize = ARRAY_SIZE(ov9732_init_setting_30fps_720p);
 
-		ov9732_data.pix.width = 640;
-		ov9732_data.pix.height = 480;
+		ov9732_data.pix.width = 1280;
+		ov9732_data.pix.height = 720;
 		retval = ov9732_download_firmware(pModeSetting, ArySize);
 		if (retval < 0)
 			goto err;
 
-		pModeSetting = ov9732_setting_30fps_VGA_640_480;
+		/*pModeSetting = ov9732_setting_30fps_VGA_640_480;
 		ArySize = ARRAY_SIZE(ov9732_setting_30fps_VGA_640_480);
-		retval = ov9732_download_firmware(pModeSetting, ArySize);
-	} else if ((dn_mode == SUBSAMPLING && orig_dn_mode == SCALING) ||
+		retval = ov9732_download_firmware(pModeSetting, ArySize);*/
+	} /*else if ((dn_mode == SUBSAMPLING && orig_dn_mode == SCALING) ||
 			(dn_mode == SCALING && orig_dn_mode == SUBSAMPLING)) {
 		/* change between subsampling and scaling
-		 * go through exposure calucation */
+		 * go through exposure calucation *
 		retval = ov9732_change_mode_exposure_calc(frame_rate, mode);
 	} else {
 		/* change inside subsampling or scaling
-		 * download firmware directly */
+		 * download firmware directly *
 		retval = ov9732_change_mode_direct(frame_rate, mode);
-	}
+	}*/
 
 	if (retval < 0)
 		goto err;
 
-	OV9732_set_AE_target(AE_Target);
-	OV9732_get_light_freq();
-	OV9732_set_bandingfilter();
-	ov9732_set_virtual_channel(ov9732_data.csi);
+	//OV9732_set_AE_target(AE_Target);
+	//OV9732_get_light_freq();
+	//OV9732_set_bandingfilter();
+	//ov9732_set_virtual_channel(ov9732_data.csi);
 
 	/* add delay to wait for sensor stable */
 	if (mode == ov9732_mode_QSXGA_2592_1944) {
@@ -2004,6 +2011,7 @@ static int ov9732_init_mode(enum ov9732_frame_rate frame_rate,
 		}
 	}
 err:
+	pr_err("ERROR: %d\n", retval);
 	return retval;
 }
 
