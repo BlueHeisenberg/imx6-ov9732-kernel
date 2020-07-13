@@ -1911,7 +1911,7 @@ static int ov9732_init_mode(enum ov9732_frame_rate frame_rate,
 		pr_err("Can not enable mipi csi2 driver!\n");
 		return -1;
 	} else {
-		pr_info("Mipi csi2 driver enabled\n", mode);
+		pr_info("Mipi csi2 driver enabled\n");
 	}
 
 	mipi_csi2_set_lanes(mipi_csi2_info);
@@ -1941,9 +1941,9 @@ static int ov9732_init_mode(enum ov9732_frame_rate frame_rate,
 		if (retval < 0)
 			goto err;
 
-		/*pModeSetting = ov9732_setting_30fps_VGA_640_480;
-		ArySize = ARRAY_SIZE(ov9732_setting_30fps_VGA_640_480);
-		retval = ov9732_download_firmware(pModeSetting, ArySize);*/
+		pModeSetting = ov9732_setting_30fps_720P_1280_720;
+		ArySize = ARRAY_SIZE(ov9732_setting_30fps_720P_1280_720);
+		retval = ov9732_download_firmware(pModeSetting, ArySize);
 	} /*else if ((dn_mode == SUBSAMPLING && orig_dn_mode == SCALING) ||
 			(dn_mode == SCALING && orig_dn_mode == SUBSAMPLING)) {
 		/* change between subsampling and scaling
@@ -1978,6 +1978,7 @@ static int ov9732_init_mode(enum ov9732_frame_rate frame_rate,
 	msleep(msec_wait4stable);
 
 	if (mipi_csi2_info) {
+		pr_info("mipi csi2 info found!\n");
 		unsigned int i;
 
 		i = 0;
@@ -2000,6 +2001,7 @@ static int ov9732_init_mode(enum ov9732_frame_rate frame_rate,
 		/* wait for mipi stable */
 		mipi_reg = mipi_csi2_get_error1(mipi_csi2_info);
 		while ((mipi_reg != 0x0) && (i < 10)) {
+			pr_err("mipi csi2 error: %d\n", mipi_reg);
 			mipi_reg = mipi_csi2_get_error1(mipi_csi2_info);
 			i++;
 			msleep(10);

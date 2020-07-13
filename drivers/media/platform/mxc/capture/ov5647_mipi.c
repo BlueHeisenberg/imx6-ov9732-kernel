@@ -1535,10 +1535,10 @@ static const struct v4l2_subdev_pad_ops ov5647_subdev_pad_ops = {
 
 static struct v4l2_subdev_core_ops ov5647_subdev_core_ops = {
 	.s_power	= ov5647_s_power,
-#ifdef CONFIG_VIDEO_ADV_DEBUG
+/*#ifdef CONFIG_VIDEO_ADV_DEBUG
 	.g_register	= ov5647_get_register,
 	.s_register	= ov5647_set_register,
-#endif
+#endif*/
 };
 
 static struct v4l2_subdev_ops ov5647_subdev_ops = {

@@ -216,7 +216,7 @@
 		reg = <0x50>;
 	};
 
-	ov564x_mipi: ov9732_mipi@36 {
+	ov9732_mipi: ov9732_mipi@36 {
 		compatible = "ovti,ov9732_mipi";
 		reg = <0x36>;
 		clocks = <&clks 200>;
