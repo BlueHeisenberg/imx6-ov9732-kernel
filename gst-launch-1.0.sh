@@ -1,1 +1,1 @@
-gst-launch-1.0 -v imxv4l2videosrc device=/dev/video0 ! imxg2dvideosink
+gst-launch-1.0 -v imxv4l2videosrc device=/dev/video0 ! capsfilter caps="video/x-raw,width=1280,height=720" ! imxipuvideotransform ! imxipuvideosink

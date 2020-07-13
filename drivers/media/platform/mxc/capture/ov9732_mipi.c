@@ -35,6 +35,7 @@
 #include <media/v4l2-chip-ident.h>
 #include "v4l2-int-device.h"
 #include "mxc_v4l2_capture.h"
+#include "../../../../mxc/mipi/mxc_mipi_csi2.h"
 
 #define OV9732_VOLTAGE_ANALOG               3300000
 #define OV9732_VOLTAGE_DIGITAL_CORE         1800000
@@ -1891,8 +1892,8 @@ static int ov9732_init_mode(enum ov9732_frame_rate frame_rate,
 		pr_err("Wrong ov9732 mode detected!\n");
 		return -1;
 	} else {
-		pr_info("OV9732 mode: %d\n", mode);
-		pr_info("OV9732 framerate: %d\n", frame_rate);
+		pr_info("OV9732 mode: 0x%08x\n", mode);
+		pr_info("OV9732 framerate: 0x%08x\n", frame_rate);
 	}
 
 	mipi_csi2_info = mipi_csi2_get_info();
@@ -1927,7 +1928,7 @@ static int ov9732_init_mode(enum ov9732_frame_rate frame_rate,
 	else
 		pr_err("currently this sensor format can not be supported!\n");*/
 
-	mipi_csi2_set_datatype(mipi_csi2_info, V4L2_PIX_FMT_GREY);
+	mipi_csi2_set_datatype(mipi_csi2_info, MIPI_DT_RAW8);
 
 	dn_mode = ov9732_mode_info_data[frame_rate][mode].dn_mode;
 	orig_dn_mode = ov9732_mode_info_data[frame_rate][orig_mode].dn_mode;
@@ -1985,7 +1986,9 @@ static int ov9732_init_mode(enum ov9732_frame_rate frame_rate,
 
 		/* wait for mipi sensor ready */
 		mipi_reg = mipi_csi2_dphy_status(mipi_csi2_info);
+		pr_info("mipi csi2 sensor clk: 0x%08x\n", mipi_reg);
 		while ((mipi_reg == 0x200) && (i < 10)) {
+			pr_info("mipi csi2 sensor clk: 0x%08x\n", mipi_reg);
 			mipi_reg = mipi_csi2_dphy_status(mipi_csi2_info);
 			i++;
 			msleep(10);
@@ -2001,19 +2004,19 @@ static int ov9732_init_mode(enum ov9732_frame_rate frame_rate,
 		/* wait for mipi stable */
 		mipi_reg = mipi_csi2_get_error1(mipi_csi2_info);
 		while ((mipi_reg != 0x0) && (i < 10)) {
-			pr_err("mipi csi2 error: %d\n", mipi_reg);
+			pr_err("mipi csi2 error: 0x%08x\n", mipi_reg);
 			mipi_reg = mipi_csi2_get_error1(mipi_csi2_info);
 			i++;
 			msleep(10);
 		}
 
-		if (i >= 10) {
+		if (i >= 20) {
 			pr_err("mipi csi2 can not reveive data correctly!\n");
 			return -1;
 		}
 	}
 err:
-	pr_err("ERROR: %d\n", retval);
+	pr_err("ERROR: 0x%08x\n", retval);
 	return retval;
 }
 
@@ -2028,7 +2031,7 @@ static int ioctl_g_ifparm(struct v4l2_int_device *s, struct v4l2_ifparm *p)
 
 	memset(p, 0, sizeof(*p));
 	p->u.bt656.clock_curr = ov9732_data.mclk;
-	pr_debug("   clock_curr=mclk=%d\n", ov9732_data.mclk);
+	pr_info("   clock_curr=mclk=0x%08x\n", ov9732_data.mclk);
 	p->if_type = V4L2_IF_TYPE_BT656;
 	p->u.bt656.mode = V4L2_IF_TYPE_BT656_MODE_NOBT_8BIT;
 	p->u.bt656.clock_min = OV9732_XCLK_MIN;
@@ -2096,6 +2099,8 @@ static int ioctl_g_parm(struct v4l2_int_device *s, struct v4l2_streamparm *a)
 	struct v4l2_captureparm *cparm = &a->parm.capture;
 	int ret = 0;
 
+	pr_info("mipi csi2 g buffer type: 0x%08x\n", a->type);
+
 	switch (a->type) {
 	/* This is the only case currently handled. */
 	case V4L2_BUF_TYPE_VIDEO_CAPTURE:
@@ -2118,7 +2123,7 @@ static int ioctl_g_parm(struct v4l2_int_device *s, struct v4l2_streamparm *a)
 		break;
 
 	default:
-		pr_debug("   type is unknown - %d\n", a->type);
+		pr_debug("   type is unknown - 0x%08x\n", a->type);
 		ret = -EINVAL;
 		break;
 	}
@@ -2146,6 +2151,8 @@ static int ioctl_s_parm(struct v4l2_int_device *s, struct v4l2_streamparm *a)
 
 	/* Make sure power on */
 	ov9732_standby(0);
+
+	pr_info("mipi csi2 s buffer type: 0x%08x\n", a->type);
 
 	switch (a->type) {
 	/* This is the only case currently handled. */
@@ -2201,17 +2208,18 @@ static int ioctl_s_parm(struct v4l2_int_device *s, struct v4l2_streamparm *a)
 	case V4L2_BUF_TYPE_SLICED_VBI_CAPTURE:
 	case V4L2_BUF_TYPE_SLICED_VBI_OUTPUT:
 		pr_debug("   type is not " \
-			"V4L2_BUF_TYPE_VIDEO_CAPTURE but %d\n",
+			"V4L2_BUF_TYPE_VIDEO_CAPTURE but 0x%08x\n",
 			a->type);
 		ret = -EINVAL;
 		break;
 
 	default:
-		pr_debug("   type is unknown - %d\n", a->type);
+		pr_debug("   type is unknown - 0x%08x\n", a->type);
 		ret = -EINVAL;
 		break;
 	}
 
+	pr_info("mipi csi2 s buffer return: 0x%08x\n", ret);
 	return ret;
 }
 
@@ -2244,6 +2252,8 @@ static int ioctl_g_fmt_cap(struct v4l2_int_device *s, struct v4l2_format *f)
 static int ioctl_g_ctrl(struct v4l2_int_device *s, struct v4l2_control *vc)
 {
 	int ret = 0;
+
+	pr_info("mipi csi2 vc id: 0x%08x\n", vc->id);
 
 	switch (vc->id) {
 	case V4L2_CID_BRIGHTNESS:
@@ -2299,7 +2309,8 @@ static int ioctl_s_ctrl(struct v4l2_int_device *s, struct v4l2_control *vc)
 {
 	int retval = 0;
 
-	pr_debug("In ov9732:ioctl_s_ctrl %d\n",
+	pr_info("mipi csi2 d ctrl: 0x%08x\n", vc->id);
+	pr_debug("In ov9732:ioctl_s_ctrl 0x%08x\n",
 		 vc->id);
 
 	switch (vc->id) {
@@ -2345,6 +2356,8 @@ static int ioctl_s_ctrl(struct v4l2_int_device *s, struct v4l2_control *vc)
 		break;
 	}
 
+	pr_info("mipi csi2 d ctrl return val: 0x%08x\n", retval);
+
 	return retval;
 }
 
@@ -2359,6 +2372,7 @@ static int ioctl_s_ctrl(struct v4l2_int_device *s, struct v4l2_control *vc)
 static int ioctl_enum_framesizes(struct v4l2_int_device *s,
 				 struct v4l2_frmsizeenum *fsize)
 {
+	pr_info("mipi csi2 fsize index: 0x%08x\n", fsize->index);
 	if (fsize->index > ov9732_mode_MAX)
 		return -EINVAL;
 
@@ -2369,6 +2383,9 @@ static int ioctl_enum_framesizes(struct v4l2_int_device *s,
 	fsize->discrete.height =
 			max(ov9732_mode_info_data[0][fsize->index].height,
 			    ov9732_mode_info_data[1][fsize->index].height);
+
+	pr_info("mipi csi2 fsize width : 0x%08x\n", fsize->discrete.width);
+	pr_info("mipi csi2 fsize height : 0x%08x\n", fsize->discrete.height);
 	return 0;
 }
 
@@ -2413,10 +2430,13 @@ static int ioctl_enum_frameintervals(struct v4l2_int_device *s,
  */
 static int ioctl_g_chip_ident(struct v4l2_int_device *s, int *id)
 {
+
 	((struct v4l2_dbg_chip_ident *)id)->match.type =
 					V4L2_CHIP_MATCH_I2C_DRIVER;
 	strcpy(((struct v4l2_dbg_chip_ident *)id)->match.name,
 		"ov9732_mipi_camera");
+
+	pr_info("mipi csi2 g chip ident: %s\n", ((struct v4l2_dbg_chip_ident *)id)->match.name);
 
 	return 0;
 }
@@ -2462,7 +2482,7 @@ static int ioctl_dev_init(struct v4l2_int_device *s)
 	u32 tgt_fps;	/* target frames per secound */
 	int ret;
 	enum ov9732_frame_rate frame_rate;
-	void *mipi_csi2_info;
+	void *mipi_csi2_info_;
 
 	ov9732_data.on = true;
 
@@ -2472,7 +2492,7 @@ static int ioctl_dev_init(struct v4l2_int_device *s)
 	tgt_xclk = max(tgt_xclk, (u32)OV9732_XCLK_MIN);
 	ov9732_data.mclk = tgt_xclk;
 
-	pr_info("   Setting mclk to %d MHz\n", tgt_xclk / 1000000);
+	pr_info("   Setting mclk to 0x%08x MHz\n", tgt_xclk / 1000000);
 
 	/* Default camera frame rate is set in probe */
 	tgt_fps = sensor->streamcap.timeperframe.denominator /
@@ -2485,11 +2505,19 @@ static int ioctl_dev_init(struct v4l2_int_device *s)
 	else
 		return -EINVAL; /* Only support 15fps or 30fps now. */
 
-	mipi_csi2_info = mipi_csi2_get_info();
+	mipi_csi2_info_ = mipi_csi2_get_info();
+
+	pr_info("======== MIPI CSI2 INFO: ========\n");
+	pr_info("ipu id: 0x%08x\n", ((struct mipi_csi2_info*) mipi_csi2_info_)->ipu_id);
+	pr_info("csi id: 0x%08x\n", ((struct mipi_csi2_info*) mipi_csi2_info_)->csi_id);
+	pr_info("v channel: 0x%08x\n", ((struct mipi_csi2_info*) mipi_csi2_info_)->v_channel);
+	pr_info("lanes: 0x%08x\n", ((struct mipi_csi2_info*) mipi_csi2_info_)->lanes);
+	pr_info("datatype: 0x%08x\n", ((struct mipi_csi2_info*) mipi_csi2_info_)->datatype);
+	pr_info("===============================\n");
 
 	/* enable mipi csi2 */
-	if (mipi_csi2_info)
-		mipi_csi2_enable(mipi_csi2_info);
+	if (mipi_csi2_info_)
+		mipi_csi2_enable(mipi_csi2_info_);
 	else {
 		printk(KERN_ERR "%s() in %s: Fail to get mipi_csi2_info!\n",
 		       __func__, __FILE__);
@@ -2511,12 +2539,17 @@ static int ioctl_dev_exit(struct v4l2_int_device *s)
 {
 	void *mipi_csi2_info;
 
+	pr_info("disabling mipi csi2... ");
+
 	mipi_csi2_info = mipi_csi2_get_info();
 
 	/* disable mipi csi2 */
-	if (mipi_csi2_info)
-		if (mipi_csi2_get_status(mipi_csi2_info))
+	if (mipi_csi2_info){
+		if (mipi_csi2_get_status(mipi_csi2_info)){
 			mipi_csi2_disable(mipi_csi2_info);
+			pr_info("DISABLED\n");	
+		}
+	}
 
 	return 0;
 }
@@ -2722,7 +2755,7 @@ static __init int ov9732_init(void)
 	pr_info("START OV9732_mipi INIT: \n");
 	err = i2c_add_driver(&ov9732_i2c_driver);
 	if (err != 0)
-		pr_err("%s:driver registration failed, error=%d\n",
+		pr_err("%s:driver registration failed, error=0x%08x\n",
 			__func__, err);
 
 	return err;
